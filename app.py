@@ -9,6 +9,7 @@ from streamlit_folium import folium_static
 
 
 BASE_URL = 'https://taxifare-nourhenekr-lgc6lf6tua-ew.a.run.app'
+BASE_URL_ADRESS_API = 'https://nominatim.openstreetmap.org'
 
 def is_float(value):
     try:
@@ -16,6 +17,22 @@ def is_float(value):
         return True
     except ValueError:
         return False
+
+def get_lat_long_of_adress(address):
+    url = BASE_URL_ADRESS_API + '/search'
+    params = {
+        'q': address,
+        'format': 'json',
+        'limit': 1
+    }
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        data = response.json()
+        if data:
+            location = data[0]
+            return float(location['lat']), float(location['lon'])
+    return None, None
+
 
 def predict(pickup_datetime, pickup_longitude, pickup_latitude, dropoff_longitude, dropoff_latitude, passenger_count):
     url = BASE_URL + '/predict'
@@ -57,10 +74,12 @@ with subcol1:
     date_input = st.date_input('Date du voyage')
 with subcol2:
     time_input = st.time_input('Heure du voyage')
-pickup_longitude = st.text_input('Départ longitude', '-73.950655')
-pickup_latitude = st.text_input('Départ latitude', '40.783282')
-dropoff_longitude = st.text_input('Arrivée longitude', '-73.984365')
-dropoff_latitude = st.text_input('Arrivée latitude', '40.769802')
+
+pickup_address = st.text_input('Départ Adresse', 'Manhattan, New York, États-Unis')
+pickup_longitude, pickup_latitude = get_lat_long_of_adress(pickup_address)
+
+dropoff_address = st.text_input('Arrivée Adresse', 'Jersey City, New Jersey, États-Unis')
+dropoff_longitude, dropoff_latitude = get_lat_long_of_adress(dropoff_address)
 
 if pickup_longitude and pickup_latitude and dropoff_longitude and dropoff_latitude:
     pickup_coords = None
@@ -83,19 +102,15 @@ prediction_made = False
 if st.button('Combien ça me coûte ?'):
 
     if pickup_longitude and pickup_latitude and dropoff_longitude and dropoff_latitude:
-        if not is_float(pickup_longitude) or not is_float(pickup_latitude) or not is_float(dropoff_longitude)or not is_float(dropoff_latitude):
-            st.warning('Invalid input. Please enter a valid float number.')
+        pickup_datetime = datetime.combine(date_input, time_input)
+        pickup_datetime_utc = pickup_datetime.astimezone(pytz.utc)
+        pickup_datetime_utc_str = pickup_datetime_utc.strftime('%Y-%m-%d %H:%M:%S')
 
-        else:
-            pickup_datetime = datetime.combine(date_input, time_input)
-            pickup_datetime_utc = pickup_datetime.astimezone(pytz.utc)
-            pickup_datetime_utc_str = pickup_datetime_utc.strftime('%Y-%m-%d %H:%M:%S')
-
-            prediction_result = predict(pickup_datetime_utc_str, pickup_longitude, pickup_latitude, dropoff_longitude, dropoff_latitude, passenger_count)
-            if prediction_result and 'fare' in prediction_result:
-                fare = round(prediction_result['fare'], 2)
-                prediction_made = True
-                st.markdown(f'<h1 style="font-size:48px;">$ {fare}</h1>', unsafe_allow_html=True)
+        prediction_result = predict(pickup_datetime_utc_str, pickup_longitude, pickup_latitude, dropoff_longitude, dropoff_latitude, passenger_count)
+        if prediction_result and 'fare' in prediction_result:
+            fare = round(prediction_result['fare'], 2)
+            prediction_made = True
+            st.markdown(f'<h1 style="font-size:48px;">$ {fare}</h1>', unsafe_allow_html=True)
 
     else:
         st.warning('Please fill in all input fields')
