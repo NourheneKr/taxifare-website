@@ -76,22 +76,24 @@ with subcol2:
     time_input = st.time_input('Heure du voyage')
 
 pickup_address = st.text_input('Départ Adresse', 'Manhattan, New York, États-Unis')
-pickup_longitude, pickup_latitude = get_lat_long_of_adress(pickup_address)
 
 dropoff_address = st.text_input('Arrivée Adresse', 'Jersey City, New Jersey, États-Unis')
-dropoff_longitude, dropoff_latitude = get_lat_long_of_adress(dropoff_address)
 
-if pickup_longitude and pickup_latitude and dropoff_longitude and dropoff_latitude:
-    pickup_coords = None
-    dropoff_coords = None
-    pickup_coords = (float(pickup_latitude), float(pickup_longitude))
-    dropoff_coords = (float(dropoff_latitude), float(dropoff_longitude))
-    if pickup_coords and dropoff_coords:
-        m = folium.Map(location=pickup_coords, zoom_start=12)
-        folium.Marker(pickup_coords, tooltip='Pickup Location', icon=folium.Icon(color='green')).add_to(m)
-        folium.Marker(dropoff_coords, tooltip='Dropoff Location', icon=folium.Icon(color='red')).add_to(m)
-        folium.PolyLine([pickup_coords, dropoff_coords], color='blue', weight=2.5, opacity=1).add_to(m)
-        folium_static(m)
+if st.button('Valider mon trajet'):
+    if pickup_address and dropoff_address:
+        pickup_longitude, pickup_latitude = get_lat_long_of_adress(pickup_address)
+        dropoff_longitude, dropoff_latitude = get_lat_long_of_adress(dropoff_address)
+        if pickup_longitude and pickup_latitude and dropoff_longitude and dropoff_latitude:
+            pickup_coords = None
+            dropoff_coords = None
+            pickup_coords = (float(pickup_latitude), float(pickup_longitude))
+            dropoff_coords = (float(dropoff_latitude), float(dropoff_longitude))
+            if pickup_coords and dropoff_coords:
+                m = folium.Map(location=pickup_coords, zoom_start=12)
+                folium.Marker(pickup_coords, tooltip='Pickup Location', icon=folium.Icon(color='green')).add_to(m)
+                folium.Marker(dropoff_coords, tooltip='Dropoff Location', icon=folium.Icon(color='red')).add_to(m)
+                folium.PolyLine([pickup_coords, dropoff_coords], color='blue', weight=2.5, opacity=1).add_to(m)
+                folium_static(m)
 
 
 passenger_count = st.number_input('Nombre de passagers', min_value=1, max_value=5)
